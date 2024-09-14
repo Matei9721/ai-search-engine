@@ -1,0 +1,10 @@
+streamlit
+openai
+langchain
+langchain-community
+langchain-openai
+langgraph
+pandas
+beautifulsoup4
+html2text
+python-dotenv
