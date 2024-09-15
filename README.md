@@ -18,6 +18,8 @@ Key features:
 
 This system aims to enhance search capabilities by making use of advanced language models and real-time web searches, helping users find accurate and up-to-date answers.
 
+![agent](resources/agent.PNG)
+
 ---
 
 ## Key Components
