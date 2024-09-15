@@ -3,7 +3,7 @@ import streamlit as st
 
 from langchain_core.messages import HumanMessage
 
-from backend.web_agent import get_agent
+from backend.web_agent import get_agent, reset_memory
 from datamodels.llm_agent_credentials import AgentCredentials
 
 st.set_page_config(layout="wide")
@@ -39,6 +39,7 @@ with st.sidebar:
     thread = st.number_input("Enter conversation thread id", value=1)
 
     if st.button("Clear chat"):
+        reset_memory()
         st.session_state.messages = [
             {"role": "assistant", "content": "Hello, I am a bot that can search the web. How can I help you?"}]
 

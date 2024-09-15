@@ -14,7 +14,6 @@ from backend.agent_tools import search_searx, search_website_link
 from datamodels.llm_agent_credentials import AgentCredentials
 from backend.llm_prompts import internet_llm_agent_prompt
 
-
 tools = [search_searx, search_website_link]
 tool_node = ToolNode(tools)
 memory = MemorySaver()
@@ -26,6 +25,16 @@ class CustomGraphState(TypedDict):
     and also allow the LLM to use the outputs of the tools.
     """
     messages: Annotated[list, add_messages]
+
+
+# TODO: Create a class to encapsule this logic and avoid having global variables
+def reset_memory():
+    """
+    Resets the memory of the graph
+    :return:
+    """
+    global memory
+    memory = MemorySaver()
 
 
 def should_continue(state: CustomGraphState) -> Literal["tools", "__end__"]:
@@ -65,7 +74,6 @@ def call_model(state: CustomGraphState, model):
         response]}
 
 
-@streamlit.cache_resource(ttl=120)
 def get_agent(agent_llm_credentials: AgentCredentials):
     if not agent_llm_credentials.has_any_valid_credentials():
         raise Exception("LLM Agent credentials are invalid, please check again.")
