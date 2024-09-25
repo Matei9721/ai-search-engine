@@ -1,10 +1,7 @@
-import streamlit
-
 from typing import Literal, Annotated
 from langgraph.graph import StateGraph
 from typing_extensions import TypedDict
 
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from langchain_core.messages import SystemMessage
@@ -13,10 +10,13 @@ from backend.llm_providers_helpers import get_chat_model
 from backend.agent_tools import search_searx, search_website_link
 from datamodels.llm_agent_credentials import AgentCredentials
 from backend.llm_prompts import internet_llm_agent_prompt
+from database.chat_database import ChatDatabase
 
 tools = [search_searx, search_website_link]
 tool_node = ToolNode(tools)
-memory = MemorySaver()
+
+chat_database = ChatDatabase()
+memory = chat_database.get_graph_connection()
 
 
 class CustomGraphState(TypedDict):
@@ -27,14 +27,8 @@ class CustomGraphState(TypedDict):
     messages: Annotated[list, add_messages]
 
 
-# TODO: Create a class to encapsule this logic and avoid having global variables
 def reset_memory():
-    """
-    Resets the memory of the graph
-    :return:
-    """
-    global memory
-    memory = MemorySaver()
+    chat_database.reset_database_state()
 
 
 def should_continue(state: CustomGraphState) -> Literal["tools", "__end__"]:
