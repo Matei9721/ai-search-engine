@@ -1,9 +1,9 @@
 streamlit
 openai
-langchain
-langchain-community
+langchain==0.2.5
+langchain-community==0.2.5
 langchain-openai
-langgraph
+langgraph==0.1.1
 pandas
 beautifulsoup4
 html2text
