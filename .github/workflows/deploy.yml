@@ -24,7 +24,7 @@ jobs:
 
       - name: Set up Environment Variables from Secrets
         run: |
-          echo MY_VAR1=${{ secrets.DEFAULT_GITHUB_TOKEN }} >> .env
+          echo DEFAULT_GITHUB_TOKEN=${{ secrets.DEFAULT_GITHUB_TOKEN }} >> .env
 
       - name: Build and Push Docker Image
         run: |
