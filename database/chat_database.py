@@ -121,11 +121,11 @@ class ChatDatabase:
             last_conversation = json.loads(last_checkpoint[-1][3].decode("utf-8"))["channel_values"]["messages"]
             for message in last_conversation:
                 if message['kwargs']["type"] == "human":
-                    # print(f"Human: {message['kwargs']['content']}")
                     streamlit_conversation.append({"role": "user", "content": message['kwargs']['content']})
                 elif message['kwargs']["type"] == "ai":
-                    # print(f"AI: {message['kwargs']['content']}")
-                    streamlit_conversation.append({"role": "assistant", "content": message['kwargs']['content']})
+                    # Make sure empty AI messages are ignored
+                    if message['kwargs']['content'] != "":
+                        streamlit_conversation.append({"role": "assistant", "content": message['kwargs']['content']})
         except Exception as e:
             print("Failed to load conversation or no conversation to load.")
 

@@ -93,6 +93,7 @@ if agent_credentials.has_any_valid_credentials():
     # Display chat messages from history on app rerun
     for message in history:
         with st.chat_message(message["role"]):
+            print(message["content"])
             st.markdown(message["content"])
 
 if agent_credentials.has_any_valid_credentials():
