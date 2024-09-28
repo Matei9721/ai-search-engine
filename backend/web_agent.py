@@ -4,7 +4,7 @@ from typing_extensions import TypedDict
 
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, AIMessage
 
 from backend.llm_providers_helpers import get_chat_model
 from backend.agent_tools import search_searx, search_website_link
@@ -60,9 +60,12 @@ def call_model(state: CustomGraphState, model):
                        SystemMessage(
                            content=internet_llm_agent_prompt)
                    ] + messages
-
-    response = model.invoke(messages)
-
+    try:
+        response = model.invoke(messages)
+    except Exception as e:
+        return {"messages": [AIMessage(content="Error occurred because token limit has been reached (Token limit"
+                                               "is only 8k tokens for free GitHub LLM API usage). Please switch the"
+                                               "LLM provider to avoid this error.")]}
     return {"messages": [SystemMessage(
         content=internet_llm_agent_prompt),
         response]}
