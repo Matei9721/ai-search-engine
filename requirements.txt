@@ -11,3 +11,4 @@ html2text
 python-dotenv
 langgraph-checkpoint-sqlite===2.0.1
 google-ai-generativelanguage===0.6.10
+langchain-google-genai===2.0.7
