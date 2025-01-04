@@ -1,3 +1,4 @@
+from anyio.lowlevel import checkpoint
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
 import json
@@ -11,7 +12,7 @@ enables the graph to create the illusion of a conversation.
 # TODO: Add type casting
 
 class ChatDatabase:
-    def __init__(self, database_location: str = "database/checkpoints.sqlite"):
+    def __init__(self, database_location: str = "database/checkpoints_with_gemini.sqlite"):
         self.database_location = database_location
         try:
             self.memory = SqliteSaver.from_conn_string(database_location)
@@ -24,7 +25,9 @@ class ChatDatabase:
         :return: SqliteSaver
         """
         try:
-            return SqliteSaver.from_conn_string(self.database_location)
+            # return SqliteSaver.from_conn_string(self.database_location)
+            sqlite_conn = sqlite3.connect(self.database_location, check_same_thread=False)
+            return SqliteSaver(sqlite_conn)
         except Exception as _:
             raise Exception("Could not load database from specified path")
 
@@ -71,7 +74,7 @@ class ChatDatabase:
         cursor = conn.cursor()
 
         # SQL query to fetch data where id starts with thread_id_prefix and parent_ts is NULL
-        query = "SELECT * FROM checkpoints WHERE thread_id LIKE ? AND parent_ts IS NULL"
+        query = "SELECT * FROM checkpoints WHERE thread_id LIKE ? AND parent_checkpoint_id IS NULL"
 
         # Execute the query with the thread_id_prefix parameter followed by a wildcard
         cursor.execute(query, (thread_id_prefix + '%',))  # Add '%' for wildcard match
@@ -117,15 +120,24 @@ class ChatDatabase:
         streamlit_conversation = [{"role": "assistant",
                                    "content": "Hello, I am a bot that can search the web. How can I help you?"}]
         try:
-            last_checkpoint = self.get_checkpoint_by_thread_id(thread_id=user_identifier + str(thread))
-            last_conversation = json.loads(last_checkpoint[-1][3].decode("utf-8"))["channel_values"]["messages"]
-            for message in last_conversation:
-                if message['kwargs']["type"] == "human":
-                    streamlit_conversation.append({"role": "user", "content": message['kwargs']['content']})
-                elif message['kwargs']["type"] == "ai":
-                    # Make sure empty AI messages are ignored
-                    if message['kwargs']['content'] != "":
-                        streamlit_conversation.append({"role": "assistant", "content": message['kwargs']['content']})
+            checkpoint = self.get_checkpoint_by_thread_id(user_identifier + str(thread))
+            for check in checkpoint:
+                data = json.loads(check[6].decode("utf-8"))
+                if data["source"] == "input":
+                    streamlit_conversation.append(
+                        {"role": "user", "content": data["writes"]["__start__"]["messages"][0]["kwargs"]["content"]})
+                else:
+                    if data["writes"]:
+                        if "agent" in data["writes"]:
+                            for msg in data["writes"]["agent"]["messages"]:
+                                if msg["kwargs"]["type"] == "ai":
+                                    if msg["kwargs"]["content"] == "":
+                                        streamlit_conversation.append(
+                                            {"role": "assistant", "content": "Using a tool.."})
+                                    else:
+                                        streamlit_conversation.append(
+                                            {"role": "assistant", "content": msg["kwargs"]["content"]})
+
         except Exception as e:
             print("Failed to load conversation or no conversation to load.")
 
@@ -142,11 +154,11 @@ class ChatDatabase:
             # Get all checkpoints for this user id
             user_checkpoints = self.get_checkpoints_by_user_id(user_id)
             for checkpoint in user_checkpoints:
-                checkpoint_data = json.loads(checkpoint[3].decode("utf-8"))
-                user_history["chat_timestamp"].append(checkpoint_data["ts"])
+                checkpoint_data = json.loads(checkpoint[6].decode("utf-8"))
+                user_history["chat_timestamp"].append("Unavailable")
                 user_history["chat_id"].append(int(checkpoint[0].split(user_id)[1]))
                 user_history["chat_start"].append(
-                    checkpoint_data["channel_values"]["__start__"]["messages"][0]["kwargs"]["content"])
+                    checkpoint_data["writes"]["__start__"]["messages"][0]["kwargs"]["content"])
 
         except Exception as e:
             print("Failed to load conversation or no conversation to load.")

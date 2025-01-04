@@ -3,12 +3,14 @@ import os
 from dotenv import load_dotenv
 
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from datamodels.llm_agent_credentials import AgentCredentials
 
 # Load environment variables from .env file
 load_dotenv()
 default_github_token = os.getenv("DEFAULT_GITHUB_TOKEN")
+default_google_token = os.getenv("DEFAULT_GOOGLE_TOKEN")
 
 def get_chat_model(agent_llm_credentials: AgentCredentials):
     """
@@ -22,6 +24,16 @@ def get_chat_model(agent_llm_credentials: AgentCredentials):
             model=agent_llm_credentials.openai_model,
             temperature=0
         )
+
+    elif agent_llm_credentials.has_valid_google_credentials():
+        google_token_api_key = default_google_token if agent_llm_credentials.google_default_token\
+            else agent_llm_credentials.google_token
+        return ChatGoogleGenerativeAI(
+            model=agent_llm_credentials.gemini_model,
+            temperature=0,
+            google_api_key=google_token_api_key
+        )
+
     elif agent_llm_credentials.has_valid_azure_credentials():
         return AzureChatOpenAI(
             azure_endpoint=agent_llm_credentials.azure_endpoint,

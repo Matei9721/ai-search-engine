@@ -4,15 +4,15 @@ from typing_extensions import TypedDict
 
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 
 from backend.llm_providers_helpers import get_chat_model
-from backend.agent_tools import search_searx, search_website_link
+from backend.agent_tools import search_searx, search_website_link, search_google_serapi
 from datamodels.llm_agent_credentials import AgentCredentials
 from backend.llm_prompts import internet_llm_agent_prompt
 from database.chat_database import ChatDatabase
 
-tools = [search_searx, search_website_link]
+tools = [search_google_serapi, search_website_link]
 tool_node = ToolNode(tools)
 
 chat_database = ChatDatabase()
@@ -55,6 +55,7 @@ def call_model(state: CustomGraphState, model):
     :return: Next decision of the graph
     """
     messages = state["messages"]
+    print(messages)
     if len(messages) == 1:
         messages = [
                        SystemMessage(
@@ -63,9 +64,18 @@ def call_model(state: CustomGraphState, model):
     try:
         response = model.invoke(messages)
     except Exception as e:
+        print("error", e)
         return {"messages": [AIMessage(content="Error occurred because token limit has been reached (Token limit"
                                                "is only 8k tokens for free GitHub LLM API usage). Please switch the"
                                                "LLM provider to avoid this error.")]}
+
+    # Gemini does not support passing multiple system messages.
+    if "safety_ratings" in response.response_metadata:
+        return {"messages": [HumanMessage(
+        content=internet_llm_agent_prompt),
+        response]}
+
+    print("no safety ratings")
     return {"messages": [SystemMessage(
         content=internet_llm_agent_prompt),
         response]}

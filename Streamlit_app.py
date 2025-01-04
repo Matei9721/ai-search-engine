@@ -28,8 +28,14 @@ if 'selected_key' not in st.session_state:
 with st.sidebar:
     # Streamlit UI for dynamic configuration
     st.markdown("LLM Configuration")
-    llm_provider = st.selectbox(label="Select your LLM provider", options=["GitHubOpenAI", "OpenAI", "AzureOpenAI"],
+    llm_provider = st.selectbox(label="Select your LLM provider", options=["GitHubOpenAI", "GoogleGemini",
+                                                                           "OpenAI", "AzureOpenAI"],
                                 index=0)
+
+    st.warning("**GitHub OpenAI models** are free to use, but have a limit of 8k tokens per request which is very"
+               " limiting when connecting the LLMs to the web tools.\n \n **Gemini models** have a much higher token"
+               " limit, but are not as smart and do not how to use the tools available as good as OpenAI models.")
+
     agent_credentials = AgentCredentials()
     if llm_provider == "GitHubOpenAI":
         # Create a checkbox that is on (True) by default
@@ -40,6 +46,15 @@ with st.sidebar:
         # If the checkbox is unchecked, allow user to add their own GitHub token
         if not use_default_token:
             agent_credentials.github_token = st.text_input("GitHub Token", value=None, type="password")
+    elif llm_provider == "GoogleGemini":
+        use_default_token_google = st.checkbox("Use default token. (Could be broken)", value=True)
+        agent_credentials.google_default_token = use_default_token_google
+
+        agent_credentials.gemini_model = st.text_input("Gemini model", value="gemini-1.5-flash-8b")
+        agent_credentials.github_default_token = False
+
+        if not use_default_token_google:
+            agent_credentials.google_token = st.text_input("Google API Key", value=None, type="password")
     elif llm_provider == "OpenAI":
         agent_credentials.github_default_token = False
         agent_credentials.openai_model = st.text_input("OpenAI model", value="gpt-4o-mini")
@@ -97,7 +112,7 @@ if agent_credentials.has_any_valid_credentials():
             st.markdown(message["content"])
 
 if agent_credentials.has_any_valid_credentials():
-    prompt = st.chat_input("Say something")  # Wait for user input
+    prompt = st.chat_input("Ask me anything!")  # Wait for user input
 
     if prompt:
         # Proceed once the user has provided input
